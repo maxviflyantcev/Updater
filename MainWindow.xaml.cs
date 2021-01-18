@@ -63,12 +63,12 @@ namespace Updater
                         MessageBox.Show("Ошибка в определении версии!", "Внимание!", MessageBoxButton.OK);
                         return;
                     }
-                    else if (int.Parse(set_soft[2]) == int.Parse(cur_soft[2]))
+                    else if (int.Parse(set_soft[2]) > int.Parse(cur_soft[2]))
                     {
                         soft.Status = "Возможно обновление";
                         e.Row.Background = Brushes.Yellow;
                     }
-                    else if (int.Parse(set_soft[1]) == int.Parse(cur_soft[1]))
+                    else if (int.Parse(set_soft[1]) > int.Parse(cur_soft[1]) || int.Parse(set_soft[0]) > int.Parse(cur_soft[0]))
                     {
                         soft.Status = "Требуется обновление";
                         e.Row.Background = Brushes.Red;
@@ -77,7 +77,7 @@ namespace Updater
                 else
                 {
                     soft.Status = "Установлена актуальная версия";
-                    e.Row.Background = Brushes.Green;
+                    e.Row.Background = Brushes.Blue;
                     continue;
                 }
             }
