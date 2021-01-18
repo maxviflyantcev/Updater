@@ -3,7 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:Updater" xmlns:xctk="http://schemas.xceed.com/wpf/xaml/toolkit"
+        xmlns:local="clr-namespace:Updater"
         mc:Ignorable="d"
     Title="Менеджер обновлений" Height="553" Width="1055">
     <Grid>
@@ -100,9 +100,6 @@
             </StatusBarItem>
         </StatusBar>
         <Label Content="Текущая диретория актуальных версий:" HorizontalAlignment="Left" Margin="10,7,0,0" VerticalAlignment="Top" Width="233" Height="28"/>
-        <Label Name="lbl_updateDir" Content="" HorizontalAlignment="Left" Margin="248,7,0,0" VerticalAlignment="Top" Height="28" Width="298" Background="CadetBlue"/>
-        <Button Name="btn_changeSetupPath" HorizontalAlignment="Left" Margin="560,7,0,0" VerticalAlignment="Top" Width="28" Height="28" Click="btn_changeSetupPath_Click">
-            
-        </Button> 
+        <Label Name="lbl_updateDir" Content="" HorizontalAlignment="Left" Margin="248,7,0,0" VerticalAlignment="Top" Height="28" Width="298" Background="AliceBlue"/>
     </Grid>
 </Window>
