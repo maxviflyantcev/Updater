@@ -27,6 +27,7 @@ namespace Updater
     public partial class MainWindow : Window
     {
         private readonly ManagerController Controller = new ManagerController();
+        private string _SetupPath = null;
         public MainWindow()
         {
             InitializeComponent();
@@ -36,9 +37,14 @@ namespace Updater
                 if (fldr.ShowDialog() == System.Windows.Forms.DialogResult.OK)
                 {
                     string[] Setup_Files = Directory.GetFiles(fldr.SelectedPath);
+                    _SetupPath = fldr.SelectedPath;
                     lbl_updateDir.Content = fldr.SelectedPath;
                     Controller.Get_Setup_Version(Setup_Files);
                     grid_setup.ItemsSource = Controller._Setup;
+                }
+                else
+                {
+                    return;
                 }
             }
 
@@ -63,17 +69,22 @@ namespace Updater
                         MessageBox.Show("Ошибка в определении версии!", "Внимание!", MessageBoxButton.OK);
                         return;
                     }
-                    else if (int.Parse(set_soft[2]) == int.Parse(cur_soft[2]))
+                    else if (int.Parse(set_soft[2]) > int.Parse(cur_soft[2]))
                     {
                         soft.Status = "Возможно обновление";
                         e.Row.Background = Brushes.Yellow;
                     }
-                    else if (int.Parse(set_soft[1]) == int.Parse(cur_soft[1]))
+                    else if (int.Parse(set_soft[1]) > int.Parse(cur_soft[1]) || int.Parse(set_soft[0]) > int.Parse(cur_soft[0]))
                     {
                         soft.Status = "Требуется обновление";
                         e.Row.Background = Brushes.Red;
                     }
                 }
+                else if (find_soft == null)
+                {
+                    soft.Status = "Обновление невозможно. Отсутствует установочный файл!";
+                    e.Row.Background = Brushes.Blue;
+                } 
                 else
                 {
                     soft.Status = "Установлена актуальная версия";
@@ -96,6 +107,7 @@ namespace Updater
                     txtBlock_Info.Text = "Удаление... " + current.Name;
                     Controller.Delete(current.Name);
                     txtBlock_Info.Text = current.Name + " успешно удалено из системы!";
+                    grid_soft.UpdateLayout();
                 }
             }
             //Controller._Current.Clear();
@@ -118,6 +130,7 @@ namespace Updater
                         Controller.Delete(current.Name);
                         Controller.Install(setup.sPath);
                         txtBlock_Info.Text = setup.sName + " успешно обновлено!";
+                        grid_soft.UpdateLayout();
                     }
                 }
             }
@@ -219,6 +232,26 @@ namespace Updater
                     continue;
                 }
                 chBx.IsChecked = chkSelectAll.IsChecked;
+            }
+        }
+
+        private void btn_changeSetupPath_Click(object sender, RoutedEventArgs e)
+        {
+            using (var fldr = new FolderBrowserDialog())
+            {
+                if (fldr.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+                {
+                    string[] Setup_Files = Directory.GetFiles(fldr.SelectedPath);
+                    _SetupPath = fldr.SelectedPath;
+                    lbl_updateDir.Content = fldr.SelectedPath;
+                    Controller._Setup.Clear();
+                    Controller.Get_Setup_Version(Setup_Files);
+                    grid_setup.ItemsSource = Controller._Setup;
+                }
+                else
+                {
+                    return;
+                }
             }
         }
     }
