@@ -16,6 +16,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
+using System.Windows.Threading;
 using CheckBox = System.Windows.Controls.CheckBox;
 using MessageBox = System.Windows.MessageBox;
 
@@ -27,6 +28,9 @@ namespace Updater
     public partial class MainWindow : Window
     {
         private readonly ManagerController Controller = new ManagerController();
+        private string _SetupPath = null;
+        public BackgroundWorker worker_setup, worker_update, worker_delete;
+
         public MainWindow()
         {
             InitializeComponent();
@@ -36,12 +40,13 @@ namespace Updater
                 if (fldr.ShowDialog() == System.Windows.Forms.DialogResult.OK)
                 {
                     string[] Setup_Files = Directory.GetFiles(fldr.SelectedPath);
+                    _SetupPath = fldr.SelectedPath;
                     lbl_updateDir.Content = fldr.SelectedPath;
                     Controller.Get_Setup_Version(Setup_Files);
                     grid_setup.ItemsSource = Controller._Setup;
                 }
             }
-
+            this.Show();
             Controller.GetVersion();
             grid_soft.ItemsSource = Controller._Current;
             grid_soft.LoadingRow += Grid_soft_LoadingRow;
@@ -63,24 +68,90 @@ namespace Updater
                         MessageBox.Show("Ошибка в определении версии!", "Внимание!", MessageBoxButton.OK);
                         return;
                     }
-                    else if (int.Parse(set_soft[2]) > int.Parse(cur_soft[2]))
-                    {
-                        soft.Status = "Возможно обновление";
-                        e.Row.Background = Brushes.Yellow;
-                    }
-                    else if (int.Parse(set_soft[1]) > int.Parse(cur_soft[1]) || int.Parse(set_soft[0]) > int.Parse(cur_soft[0]))
+                    else if (int.Parse(set_soft[0]) > int.Parse(cur_soft[0]))
                     {
                         soft.Status = "Требуется обновление";
                         e.Row.Background = Brushes.Red;
                     }
+                    else if (int.Parse(set_soft[1]) > int.Parse(cur_soft[1])) 
+                    {
+                        soft.Status = "Возможно обновление";
+                        e.Row.Background = Brushes.Red;
+                    }
+                    else if (int.Parse(set_soft[2]) > int.Parse(cur_soft[2]))
+                    {
+                        soft.Status = "Обновление не требуется";
+                        e.Row.Background = Brushes.Yellow;
+                    }
+                    else
+                    {
+                        soft.Status = "Установлена актуальная версия";
+                        e.Row.Background = Brushes.Green;
+                        continue;
+                    }
                 }
                 else
                 {
-                    soft.Status = "Установлена актуальная версия";
-                    e.Row.Background = Brushes.Blue;
                     continue;
                 }
             }
+        }
+
+        private void Setup(object list)
+        {
+            List<SetupSoftwave> set = list as List<SetupSoftwave>;
+             
+            foreach (var item in set)
+            {
+                if (item != null)
+                {
+                    Dispatcher.BeginInvoke(new Action(() => txtBlock_Info.Text = "Установка... " + item.sName)); 
+                    Controller.Install(item.sPath);
+                    Dispatcher.BeginInvoke(new Action(() => txtBlock_Info.Text = item.sName + " успешно установлен в систему!"));
+                    worker_setup.ReportProgress( 100 / set.Count);
+                    Dispatcher.BeginInvoke(new Action(() => { Controller._Current.Clear(); Controller.GetVersion(); }));
+                }                
+            }
+        }
+
+        private void Worker_SetupDoWork(object sender, DoWorkEventArgs e)
+        {
+            Setup(e.Argument as List<SetupSoftwave>);
+        }
+
+        private void Worker_SetupProgressChanged(object sender, ProgressChangedEventArgs e)
+        {
+            progress_Bar.Value += e.ProgressPercentage;
+        }
+
+        private void Update()
+        {
+            
+        }
+
+        private void Worker_UpdateDoWork(object sender, DoWorkEventArgs e)
+        {           
+            Update();
+        }
+
+        private void Worker_UpdateProgressChanged(object sender, ProgressChangedEventArgs e)
+        {
+            progress_Bar.Value = e.ProgressPercentage;
+        }
+
+        private void Delete()
+        {
+
+        }
+
+        private void Worker_DeleteDoWork(object sender, DoWorkEventArgs e)
+        {
+            Delete();
+        }
+
+        private void Worker_DeleteProgressChanged(object sender, ProgressChangedEventArgs e)
+        {
+            progress_Bar.Value = e.ProgressPercentage;
         }
 
         private void Btn_Delete_Click(object sender, RoutedEventArgs e)
@@ -92,14 +163,13 @@ namespace Updater
                 if (firstCol.GetCellContent(item) is CheckBox box && box.IsChecked == true)
                 {
                     CurrentSoftwave current = item as CurrentSoftwave;
-                    
+
                     txtBlock_Info.Text = "Удаление... " + current.Name;
                     Controller.Delete(current.Name);
-                    txtBlock_Info.Text = current.Name + " успешно удалено из системы!";
+                    txtBlock_Info.Text = current.Name + " успешно удалён из системы!";
                 }
             }
-            //Controller._Current.Clear();
-            //Controller.GetVersion();
+            grid_soft.UpdateLayout();
         }
 
         private void Btn_Update_Click(object sender, RoutedEventArgs e)
@@ -117,33 +187,53 @@ namespace Updater
                     {
                         Controller.Delete(current.Name);
                         Controller.Install(setup.sPath);
-                        txtBlock_Info.Text = setup.sName + " успешно обновлено!";
+                        txtBlock_Info.Text = setup.sName + " успешно обновлён!";
                     }
                 }
             }
-            //Controller._Current.Clear();
-            //Controller.GetVersion();
+            grid_soft.UpdateLayout();
         }
 
         private void Btn_Setup_Click(object sender, RoutedEventArgs e)
         {
+            List<SetupSoftwave> setup_list = new List<SetupSoftwave>();
             var firstCol = grid_setup.Columns.OfType<DataGridCheckBoxColumn>().FirstOrDefault(c => c.DisplayIndex == 0);
-
             foreach (var item in grid_setup.Items)
             {
                 if (firstCol.GetCellContent(item) is CheckBox box && box.IsChecked == true)
                 {
                     SetupSoftwave _setup = item as SetupSoftwave;
-
+                    
                     if (_setup != null)
                     {
-                        txtBlock_Info.Text = "Установка... " + _setup.sName;
-                        Controller.Install(_setup.sPath);
-                        txtBlock_Info.Text = _setup.sName + " успешно установлено в системы!";
-                        grid_soft.UpdateLayout();
+                        setup_list.Add(_setup);
                     }
                 }
             }
+            worker_setup = new BackgroundWorker();
+            worker_setup.WorkerReportsProgress = true;
+            worker_setup.ProgressChanged += Worker_SetupProgressChanged;
+            worker_setup.DoWork += Worker_SetupDoWork;
+            worker_setup.RunWorkerAsync(setup_list);
+
+            //var firstCol = grid_setup.Columns.OfType<DataGridCheckBoxColumn>().FirstOrDefault(c => c.DisplayIndex == 0);
+
+            //foreach (var item in grid_setup.Items)
+            //{
+            //    if (firstCol.GetCellContent(item) is CheckBox box && box.IsChecked == true)
+            //    {
+            //        SetupSoftwave _setup = item as SetupSoftwave;
+
+            //        if (_setup != null)
+            //        {
+            //            txtBlock_Info.Text = "Установка... " + _setup.sName;
+            //            Controller.Install(_setup.sPath);
+            //            txtBlock_Info.Text = _setup.sName + " успешно установлен в систему!";
+
+            //        }
+            //    }
+            //}
+            //grid_soft.UpdateLayout();
             //Controller._Current.Clear();
             //Controller.GetVersion();
         }
@@ -219,6 +309,21 @@ namespace Updater
                     continue;
                 }
                 chBx.IsChecked = chkSelectAll.IsChecked;
+            }
+        }
+
+        private void btn_changeSetupPath_Click(object sender, RoutedEventArgs e)
+        {
+            using (var fldr = new FolderBrowserDialog())
+            {
+                if (fldr.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+                {
+                    string[] Setup_Files = Directory.GetFiles(fldr.SelectedPath);
+                    _SetupPath = fldr.SelectedPath;
+                    lbl_updateDir.Content = fldr.SelectedPath;
+                    Controller.Get_Setup_Version(Setup_Files);
+                    grid_setup.ItemsSource = Controller._Setup;
+                }
             }
         }
     }

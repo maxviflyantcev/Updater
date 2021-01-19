@@ -64,6 +64,7 @@ namespace Updater
                 };
                 _Process.Start();
                 _Process.WaitForExit();
+                _Process.Close();
             }
             catch (Exception ex)
             {
@@ -84,11 +85,15 @@ namespace Updater
 
                 if (Publisher == "СЕДАТЭК-ИНФОРМ")
                 {
+                    FileVersionInfo _info = FileVersionInfo.GetVersionInfo(item);
                     CurrentSoftwave _upd = new CurrentSoftwave
                     {
                         Name = Name,
                         Version = Version,
-                        Publisher = Publisher
+                        Publisher = Publisher,
+                        MajorVesion = _info.ProductMajorPart,
+                        MinorVersion = _info.ProductMinorPart,
+                        Build = _info.ProductBuildPart
                     };
                     _Current.Add(_upd);
                 }
@@ -105,8 +110,11 @@ namespace Updater
                 {
                     sName = _info.ProductName,
                     sVersion = _info.ProductVersion,
-                    sPath = _info.FileName
-                };
+                    sMajorVesion = _info.ProductMajorPart,
+                    sMinorVersion = _info.ProductMinorPart,
+                    sBuild = _info.ProductBuildPart,
+                    sPath = _info.FileName                    
+                };                
                 _Setup.Add(_set);
             }
         }
@@ -118,6 +126,10 @@ namespace Updater
         private string version;
         private string publisher;
         private string status;
+        public int MajorVesion;
+        public int MinorVersion;
+        public int MicroVersion;
+        public int Build;
         public string Name
         {
             get { return name; }
@@ -168,6 +180,11 @@ namespace Updater
         private string sname;
         private string sversion;
         private string spath;
+        public int sMajorVesion;
+        public int sMinorVersion;
+        public int sMicroVersion;
+        public int sBuild;
+
         public string sName
         {
             get { return sname; }
